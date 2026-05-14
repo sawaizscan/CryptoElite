@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sawaiz Signals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg-0: #0a0a0c; --bg-1: #111114; --bg-2: #16161a; --bg-3: #1c1c21; --bg-4: #25252c;
+  --line: #25252c; --line-2: #34343e;
+  --ink-0: #ffffff; --ink-1: #ededf0; --ink-2: #8a8a96; --ink-3: #525260; --ink-4: #34343e;
+  --bull: #00d18d; --bull-bg: rgba(0,209,141,0.10); --bull-glow: rgba(0,209,141,0.35);
+  --bear: #ff5470; --bear-bg: rgba(255,84,112,0.10); --bear-glow: rgba(255,84,112,0.35);
+  --warn: #ffaa3a; --warn-bg: rgba(255,170,58,0.10);
+  --accent: #7c5cff; --accent-bg: rgba(124,92,255,0.12);
+  --sans: 'Geist', system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  background: var(--bg-0); color: var(--ink-1); font-family: var(--sans);
+  font-size: 14px; line-height: 1.5; min-height: 100vh; letter-spacing: -0.011em;
+  background-image: radial-gradient(ellipse 800px 600px at 20% -10%, rgba(124,92,255,0.06), transparent 70%), radial-gradient(ellipse 600px 400px at 90% 110%, rgba(0,209,141,0.04), transparent 70%);
+}
+button { font-family: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--line); background: rgba(10,10,12,0.85); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; gap: 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo { width: 36px; height: 36px; flex-shrink: 0; }
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-name { font-weight: 600; font-size: 16px; letter-spacing: -0.03em; background: linear-gradient(180deg, #fff, #b8b8c4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-tag { font-family: var(--mono); font-size: 10px; color: var(--ink-3); letter-spacing: 0.05em; margin-top: 3px; text-transform: uppercase; }
+.live-price { display: flex; align-items: center; gap: 14px; flex: 1; justify-content: center; min-width: 0; }
+.price-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
+.price-big { font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -0.03em; transition: color 0.15s; font-variant-numeric: tabular-nums; color: var(--ink-0); }
+.price-big.up { color: var(--bull); }
+.price-big.down { color: var(--bear); }
+.delta-pill { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.delta-pill.up { background: var(--bull-bg); color: var(--bull); }
+.delta-pill.down { background: var(--bear-bg); color: var(--bear); }
+.status-cluster { display: flex; align-items: center; gap: 8px; }
+.status-pill { display: flex; align-items: center; gap: 7px; background: var(--bg-2); border: 1px solid var(--line); padding: 7px 12px; border-radius: 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; color: var(--ink-2); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bull); box-shadow: 0 0 8px var(--bull-glow); animation: pulse 1.6s ease-in-out infinite; }
+.live-dot.off { background: var(--bear); box-shadow: 0 0 8px var(--bear-glow); animation: none; }
+.live-dot.idle { background: var(--ink-3); box-shadow: none; animation: none; }
+.live-dot.connecting { background: var(--warn); box-shadow: 0 0 8px rgba(255,170,58,0.5); animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.tabs { display: flex; padding: 0 24px; background: var(--bg-1); border-bottom: 1px solid var(--line); gap: 4px; overflow-x: auto; }
+.tab-btn { background: none; border: none; padding: 14px 18px; font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+.tab-btn:hover { color: var(--ink-1); }
+.tab-btn.active { color: var(--ink-0); border-bottom-color: var(--accent); }
+.tab-btn .badge { display: inline-block; background: var(--accent-bg); color: var(--accent); font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; }
+
+.market-strip { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--bg-1); border-bottom: 1px solid var(--line); }
+.market-cell { padding: 12px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; }
+.market-cell:last-child { border-right: none; }
+.market-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+.market-value { font-family: var(--mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-1); }
+.market-value.up { color: var(--bull); }
+.market-value.down { color: var(--bear); }
+.market-value.warn { color: var(--warn); }
+@media (max-width: 900px) { .market-strip { grid-template-columns: repeat(2, 1fr); } .market-cell { border-right: none; border-bottom: 1px solid var(--line); } }
+
+.scan-progress { padding: 6px 24px; background: var(--bg-1); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.scan-progress-bar { flex: 1; height: 3px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+.scan-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; width: 0%; box-shadow: 0 0 8px rgba(124,92,255,0.5); }
+.scan-progress.done .scan-progress-fill { background: var(--bull); box-shadow: 0 0 8px var(--bull-glow); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* KEY: signals get 65%, analysis 35% */
+.main { display: grid; grid-template-columns: 35fr 65fr; gap: 0; min-height: calc(100vh - 160px); }
+@media (max-width: 1200px) { .main { grid-template-columns: 1fr; } }
+.col { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+.col:last-child { border-right: none; }
+.col-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); gap: 12px; flex-wrap: wrap; }
+.col-head h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-2); }
+.col-head .meta { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.col-head .meta b { color: var(--ink-1); font-weight: 500; }
+
+.hero-verdict { padding: 32px 24px 28px; border-bottom: 1px solid var(--line); position: relative; overflow: hidden; }
+.hero-verdict::before { content: ''; position: absolute; top: -80px; right: -80px; width: 280px; height: 280px; border-radius: 50%; background: var(--ink-3); opacity: 0.08; filter: blur(50px); pointer-events: none; transition: background 0.6s; }
+.hero-verdict.bull::before { background: var(--bull); opacity: 0.18; }
+.hero-verdict.bear::before { background: var(--bear); opacity: 0.18; }
+.hero-verdict.neutral::before { background: var(--warn); opacity: 0.12; }
+.hero-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; margin-bottom: 12px; position: relative; }
+.hero-word { font-size: clamp(44px, 5.5vw, 64px); font-weight: 700; letter-spacing: -0.05em; line-height: 0.95; text-transform: lowercase; margin-bottom: 14px; position: relative; color: var(--ink-0); }
+.hero-verdict.bull .hero-word { color: var(--bull); }
+.hero-verdict.bear .hero-word { color: var(--bear); }
+.hero-verdict.neutral .hero-word { color: var(--warn); }
+.hero-meta { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; position: relative; }
+.hero-score { font-family: var(--mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink-0); }
+.hero-conf { font-family: var(--mono); font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.hero-conf b { color: var(--ink-0); font-weight: 600; }
+
+.tf-section { flex: 1; }
+.tf-section-head { padding: 14px 24px 10px; }
+.tf-section-head h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-2); }
+.tf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); }
+.tf-card { background: var(--bg-0); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.tf-card-tf { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
+.tf-card-verdict { font-size: 16px; font-weight: 600; letter-spacing: -0.03em; text-transform: lowercase; }
+.tf-card-verdict.bull { color: var(--bull); }
+.tf-card-verdict.bear { color: var(--bear); }
+.tf-card-verdict.neutral { color: var(--warn); }
+.tf-card-meter { height: 3px; background: var(--bg-3); border-radius: 2px; position: relative; overflow: hidden; }
+.tf-card-meter::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: var(--line-2); }
+.tf-card-meter-fill { position: absolute; top: 0; height: 100%; transition: all 0.5s ease; }
+.tf-card-meter-fill.bull { background: var(--bull); left: 50%; }
+.tf-card-meter-fill.bear { background: var(--bear); right: 50%; }
+
+.deriv-strip { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--line); gap: 1px; border-top: 1px solid var(--line); }
+.deriv-cell { background: var(--bg-0); padding: 14px 18px; }
+.deriv-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; margin-bottom: 6px; }
+.deriv-value { font-family: var(--mono); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin-bottom: 4px; color: var(--ink-1); }
+.deriv-value.bull { color: var(--bull); }
+.deriv-value.bear { color: var(--bear); }
+.deriv-value.neutral { color: var(--warn); }
+.deriv-note { font-size: 11px; color: var(--ink-2); line-height: 1.4; }
+
+.ext-links { display: flex; gap: 0; background: var(--bg-1); border-top: 1px solid var(--line); overflow-x: auto; }
+.ext-links a { padding: 12px 16px; font-family: var(--mono); font-size: 10px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; white-space: nowrap; transition: all 0.15s; display: flex; align-items: center; gap: 6px; border-right: 1px solid var(--line); }
+.ext-links a:last-child { border-right: none; }
+.ext-links a:hover { color: var(--ink-0); background: var(--bg-2); }
+.ext-links a svg { width: 11px; height: 11px; opacity: 0.5; }
+
+.signal-controls { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--bg-1); flex-wrap: wrap; }
+.signal-controls label { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; cursor: pointer; }
+.signal-controls input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
+.signal-controls select { background: var(--bg-2); border: 1px solid var(--line-2); color: var(--ink-1); padding: 5px 9px; border-radius: 5px; font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.btn-clear, .btn-export, .btn-import { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); padding: 5px 12px; border-radius: 5px; font-family: var(--mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s; }
+.btn-export:hover { color: var(--accent); border-color: var(--accent); }
+.btn-import:hover { color: var(--accent); border-color: var(--accent); }
+.btn-clear:hover { color: var(--bear); border-color: var(--bear); }
+.btn-clear { margin-left: auto; }
+
+.stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--line); gap: 1px; border-bottom: 1px solid var(--line); }
+.stat-cell { background: var(--bg-0); padding: 14px 20px; }
+.stat-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; margin-bottom: 3px; }
+.stat-value { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.stat-value.up { color: var(--bull); }
+.stat-value.down { color: var(--bear); }
+
+.watching { padding: 12px 24px; background: var(--bg-1); border-bottom: 1px solid var(--line); }
+.watching-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.watching-head .label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; }
+.watching-head .count { font-family: var(--mono); font-size: 10px; color: var(--ink-2); }
+.watching-list { display: flex; flex-direction: column; gap: 5px; max-height: 160px; overflow-y: auto; }
+.watching-item { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; padding: 7px 11px; background: var(--bg-2); border-radius: 5px; border: 1px solid var(--line); gap: 10px; }
+.watching-item-left { display: flex; align-items: center; gap: 8px; color: var(--ink-2); flex: 1; min-width: 0; overflow: hidden; }
+.watching-item-left .text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pair-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--bg-4); color: var(--ink-1); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; flex-shrink: 0; }
+.pair-tag.long { background: var(--bull-bg); color: var(--bull); }
+.pair-tag.short { background: var(--bear-bg); color: var(--bear); }
+.tf-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg-3); color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; flex-shrink: 0; }
+.watching-item .distance { color: var(--ink-3); font-size: 10px; white-space: nowrap; }
+.watching-empty { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-align: center; padding: 16px; }
+
+.signals-list { flex: 1; overflow-y: auto; max-height: calc(100vh - 480px); }
+.signal-card { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; transition: background 0.15s; position: relative; }
+.signal-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-4); }
+.signal-card.long::before { background: var(--bull); }
+.signal-card.short::before { background: var(--bear); }
+.signal-card:hover { background: var(--bg-1); }
+.signal-row1 { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.signal-row1-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.signal-pair { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--ink-0); letter-spacing: -0.01em; }
+.signal-side { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+.signal-side.long { background: var(--bull-bg); color: var(--bull); }
+.signal-side.short { background: var(--bear-bg); color: var(--bear); }
+.signal-strat { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.signal-score-badge { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 4px; background: var(--accent-bg); color: var(--accent); }
+.signal-status { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+.signal-status.active { background: var(--warn-bg); color: var(--warn); }
+.signal-status.tp { background: var(--bull-bg); color: var(--bull); }
+.signal-status.sl { background: var(--bear-bg); color: var(--bear); }
+.signal-status.timeout { background: var(--bg-3); color: var(--ink-3); }
+.signal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; font-family: var(--mono); }
+.signal-cell label { display: block; font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-bottom: 4px; }
+.signal-cell value { display: block; font-size: 13px; font-weight: 600; color: var(--ink-1); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.signal-cell value.entry { color: var(--accent); }
+.signal-cell value.stop { color: var(--bear); }
+.signal-cell value.target { color: var(--bull); }
+.signal-cell value.up { color: var(--bull); }
+.signal-cell value.down { color: var(--bear); }
+.signal-progress { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.progress-track { flex: 1; height: 4px; background: var(--bg-3); border-radius: 2px; position: relative; overflow: hidden; }
+.progress-fill { position: absolute; top: 0; left: 0; height: 100%; transition: width 0.3s, background 0.3s; }
+.progress-fill.bull { background: var(--bull); box-shadow: 0 0 8px var(--bull-glow); }
+.progress-fill.bear { background: var(--bear); box-shadow: 0 0 8px var(--bear-glow); }
+.signal-meta { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; color: var(--ink-3); gap: 12px; flex-wrap: wrap; }
+.signal-meta .reason { color: var(--ink-2); font-style: italic; flex: 1; min-width: 180px; }
+.signal-meta a { color: var(--accent); font-style: normal; }
+.signal-meta a:hover { text-decoration: underline; }
+
+.signal-empty { padding: 60px 24px; text-align: center; }
+.signal-empty-icon { width: 48px; height: 48px; margin: 0 auto 16px; border: 1px dashed var(--line-2); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.signal-empty-icon svg { width: 20px; height: 20px; color: var(--ink-3); }
+.signal-empty h4 { font-size: 15px; color: var(--ink-1); margin-bottom: 8px; font-weight: 600; letter-spacing: -0.02em; }
+.signal-empty p { font-size: 12px; color: var(--ink-3); max-width: 380px; margin: 0 auto; line-height: 1.5; }
+
+/* PERFORMANCE TAB */
+.perf-wrap { padding: 28px; max-width: 1400px; margin: 0 auto; }
+.perf-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 32px; border: 1px solid var(--line); }
+.perf-hero-cell { background: var(--bg-1); padding: 24px; }
+.perf-hero-label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.perf-hero-value { font-family: var(--mono); font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; color: var(--ink-0); }
+.perf-hero-value.up { color: var(--bull); }
+.perf-hero-value.down { color: var(--bear); }
+.perf-hero-value.warn { color: var(--warn); }
+.perf-hero-note { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+.perf-section { margin-bottom: 36px; }
+.perf-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-2); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.perf-section-title .help { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.perf-table { width: 100%; border-collapse: collapse; background: var(--bg-1); border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.perf-table th, .perf-table td { padding: 12px 16px; text-align: left; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--line); }
+.perf-table th { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; background: var(--bg-2); }
+.perf-table tr:last-child td { border-bottom: none; }
+.perf-table td.bull-cell { color: var(--bull); font-weight: 600; }
+.perf-table td.bear-cell { color: var(--bear); font-weight: 600; }
+.perf-table td.muted { color: var(--ink-3); }
+.perf-table .wr-bar { width: 80px; height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 8px; }
+.perf-table .wr-bar-fill { height: 100%; transition: width 0.4s; }
+.perf-table .wr-bar-fill.up { background: var(--bull); }
+.perf-table .wr-bar-fill.down { background: var(--bear); }
+.perf-table .wr-bar-fill.warn { background: var(--warn); }
+.perf-table tr.disabled { opacity: 0.6; }
+.perf-table .disable-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-3); padding: 4px 10px; border-radius: 4px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.perf-table .disable-btn:hover { color: var(--bear); border-color: var(--bear); }
+.perf-table .disable-btn.disabled { color: var(--bear); border-color: var(--bear); background: var(--bear-bg); }
+.filter-banner { background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--ink-1); }
+.filter-banner svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+.filter-banner b { color: var(--accent); }
+.perf-empty { background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px; padding: 60px 24px; text-align: center; }
+.perf-empty h3 { font-size: 18px; color: var(--ink-1); margin-bottom: 10px; font-weight: 600; letter-spacing: -0.02em; }
+.perf-empty p { font-size: 13px; color: var(--ink-3); max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+.migration-banner { background: linear-gradient(90deg, rgba(124,92,255,0.12), rgba(0,209,141,0.08)); border-bottom: 1px solid var(--accent); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--ink-1); flex-wrap: wrap; }
+.migration-banner b { color: var(--accent); }
+.migration-banner .actions { display: flex; gap: 8px; }
+.migration-banner button { background: var(--accent); color: white; border: none; padding: 6px 14px; border-radius: 5px; font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+.migration-banner button.secondary { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#7c5cff"/><stop offset="1" stop-color="#00d18d"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="40" height="40" rx="10" fill="url(#lg1)"/>
+      <path d="M11 24 L17 16 L21 22 L26 14 L31 22" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="31" cy="22" r="2.2" fill="#ffffff"/>
+    </svg>
+    <div class="brand-text">
+      <span class="brand-name">Sawaiz Signals</span>
+      <span class="brand-tag">v5 · volume profile · trend filter</span>
+    </div>
+  </div>
+  <div class="live-price">
+    <span class="price-label">BTC/USDT</span>
+    <span class="price-big" id="livePrice">—</span>
+    <span class="delta-pill" id="liveDelta">—</span>
+  </div>
+  <div class="status-cluster">
+    <div class="status-pill"><span class="live-dot connecting" id="wsDot"></span><span id="wsText">WS</span></div>
+    <div class="status-pill"><span class="live-dot idle" id="liveDot"></span><span id="liveText">REST</span></div>
+  </div>
+</header>
+
+<div id="migrationBanner" style="display:none" class="migration-banner">
+  <div>
+    <b>Strategy upgraded to v5.</b> Old signals were generated by the previous (counter-trend) strategy. Keeping them would pollute your new win-rate stats. Recommended: archive old data, start fresh.
+  </div>
+  <div class="actions">
+    <button id="archiveOldBtn">Archive old · start fresh</button>
+    <button class="secondary" id="keepOldBtn">Keep old data</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="signals">Live Signals</button>
+  <button class="tab-btn" data-tab="performance">Performance <span class="badge" id="perfBadge">0</span></button>
+</div>
+
+<div class="market-strip">
+  <div class="market-cell"><div class="market-label">24h Change</div><div class="market-value" id="sub-change">—</div></div>
+  <div class="market-cell"><div class="market-label">24h High</div><div class="market-value" id="sub-high">—</div></div>
+  <div class="market-cell"><div class="market-label">24h Low</div><div class="market-value" id="sub-low">—</div></div>
+  <div class="market-cell"><div class="market-label">24h Volume</div><div class="market-value" id="sub-vol">—</div></div>
+  <div class="market-cell"><div class="market-label">Funding</div><div class="market-value" id="sub-fund">—</div></div>
+</div>
+
+<div class="scan-progress" id="scanProgressContainer">
+  <span id="scanProgressLabel">Scanning</span>
+  <div class="scan-progress-bar"><div class="scan-progress-fill" id="scanProgressFill"></div></div>
+  <span id="scanProgressCount">0 / 8</span>
+</div>
+
+<div class="panel active" id="panel-signals">
+<main class="main">
+  <div class="col">
+    <div class="col-head">
+      <h2>BTC market verdict</h2>
+      <div class="meta">Updated <b id="lastRefresh">—</b></div>
+    </div>
+    <div class="hero-verdict neutral" id="heroVerdict">
+      <div class="hero-label">Overall consensus · weighted</div>
+      <div class="hero-word" id="verdictWord">analyzing</div>
+      <div class="hero-meta">
+        <span class="hero-score" id="verdictScore">—</span>
+        <span class="hero-conf"><b id="verdictAgree">—</b> agreement</span>
+      </div>
+    </div>
+    <div class="tf-section">
+      <div class="tf-section-head"><h3>BTC by timeframe</h3></div>
+      <div class="tf-grid" id="tfGrid"></div>
+    </div>
+    <div class="deriv-strip">
+      <div class="deriv-cell"><div class="deriv-label">Funding</div><div class="deriv-value" id="d-fund-val">—</div><div class="deriv-note" id="d-fund-note">Loading</div></div>
+      <div class="deriv-cell"><div class="deriv-label">OI 24h</div><div class="deriv-value" id="d-oi-val">—</div><div class="deriv-note" id="d-oi-note">Loading</div></div>
+      <div class="deriv-cell"><div class="deriv-label">L/S Ratio</div><div class="deriv-value" id="d-ls-val">—</div><div class="deriv-note" id="d-ls-note">Loading</div></div>
+    </div>
+    <div class="ext-links">
+      <a href="https://www.coinglass.com/LiquidationData" target="_blank" rel="noopener">Liq map <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg></a>
+      <a href="https://www.coinglass.com/FundingRate" target="_blank" rel="noopener">Funding <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg></a>
+      <a href="https://intel.arkm.com/explorer/entity/bitcoin" target="_blank" rel="noopener">Arkham <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg></a>
+      <a href="https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT.P" target="_blank" rel="noopener">Chart <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg></a>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head">
+      <h2>Live trade signals · v5</h2>
+      <div class="meta"><b id="signalCount">0</b> tracked · trend + volume profile</div>
+    </div>
+    <div class="signal-controls">
+      <label><input type="checkbox" id="filter-active" checked> Active</label>
+      <label><input type="checkbox" id="filter-closed" checked> Closed</label>
+      <select id="tfFilter"><option value="all">All TFs</option><option value="15m">15m</option><option value="30m">30m</option><option value="1h">1h</option></select>
+      <select id="pairFilter"><option value="all">All pairs</option></select>
+      <button class="btn-clear" id="clearHistory">Clear</button>
+    </div>
+    <div class="stats-strip">
+      <div class="stat-cell"><div class="stat-label">Closed</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat-cell"><div class="stat-label">Win rate</div><div class="stat-value" id="stat-wr">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Wins</div><div class="stat-value up" id="stat-wins">0</div></div>
+      <div class="stat-cell"><div class="stat-label">Losses</div><div class="stat-value down" id="stat-losses">0</div></div>
+    </div>
+    <div class="watching">
+      <div class="watching-head"><span class="label">Watching for setup</span><span class="count" id="watchingCount">—</span></div>
+      <div class="watching-list" id="watchingList"><div class="watching-empty">Scanning…</div></div>
+    </div>
+    <div class="signals-list" id="signalsList">
+      <div class="signal-empty">
+        <div class="signal-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h4>v5 strategy initialized</h4>
+        <p>Trend filter + Volume Profile + breakout-retest. Signals only fire on score ≥ 70 with multi-condition confluence. Fewer signals, higher quality.</p>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="panel" id="panel-performance">
+  <div class="perf-wrap">
+    <div id="perfContent">
+      <div class="perf-empty"><h3>Not enough data yet</h3><p>Performance breakdowns appear after 5 closed trades.</p></div>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 32px; justify-content: center;">
+      <button class="btn-export" id="exportBtn">Export history</button>
+      <button class="btn-import" id="importBtn">Import history</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const STATE_KEY = 'sawaiz_signals_state_v5';
+const FILTER_KEY = 'sawaiz_disabled_configs_v5';
+const MIGRATION_KEY = 'sawaiz_v4_migration_done';
+const state = {
+  signals: [], lastScanAt: 0, livePrice: null, ticker: null,
+  watching: [], pairPrices: {}, disabledConfigs: new Set(),
+  pairTrends: {} // pair -> { direction: 'up'/'down'/'flat', strength: 0-2 } from 1h EMA50
+};
+
+// Check for v4 data
+const v4Data = localStorage.getItem('sawaiz_signals_state_v4');
+const migrationDone = localStorage.getItem(MIGRATION_KEY);
+if (v4Data && !migrationDone) {
+  document.getElementById('migrationBanner').style.display = 'flex';
+}
+document.getElementById('archiveOldBtn').addEventListener('click', () => {
+  // Archive: store under separate key, start fresh
+  try {
+    const old = localStorage.getItem('sawaiz_signals_state_v4');
+    if (old) localStorage.setItem('sawaiz_archive_v4', old);
+  } catch (e) {}
+  localStorage.setItem(MIGRATION_KEY, 'archived');
+  document.getElementById('migrationBanner').style.display = 'none';
+  state.signals = []; persist(); renderSignals();
+});
+document.getElementById('keepOldBtn').addEventListener('click', () => {
+  // Migrate v4 signals into v5 (will look bad, but user choice)
+  try {
+    const old = JSON.parse(v4Data || '{}');
+    if (old.signals) state.signals = old.signals;
+    persist();
+  } catch (e) {}
+  localStorage.setItem(MIGRATION_KEY, 'kept');
+  document.getElementById('migrationBanner').style.display = 'none';
+  renderSignals();
+});
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+  if (saved.signals) state.signals = saved.signals;
+} catch (e) {}
+try {
+  const saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '[]');
+  state.disabledConfigs = new Set(saved);
+} catch (e) {}
+function persist() { try { localStorage.setItem(STATE_KEY, JSON.stringify({ signals: state.signals })); } catch (e) {} }
+function persistFilters() { try { localStorage.setItem(FILTER_KEY, JSON.stringify([...state.disabledConfigs])); } catch (e) {} }
+
+const PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT'];
+const TIMEFRAMES = [
+  { bin: '5m',  label: '5m',  weight: 0.5  },
+  { bin: '15m', label: '15m', weight: 0.75 },
+  { bin: '30m', label: '30m', weight: 1.0  },
+  { bin: '1h',  label: '1h',  weight: 1.25 },
+  { bin: '4h',  label: '4h',  weight: 1.75 },
+  { bin: '1d',  label: '1d',  weight: 2.0  }
+];
+// v5: removed 5m signals — too noisy. Focus on 15m/30m/1h with strict filters.
+const SIGNAL_TFS = ['15m', '30m', '1h'];
+
+// ============================================================
+// TABS
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'performance') renderPerformance();
+  });
+});
+
+// ============================================================
+// WEBSOCKET
+// ============================================================
+let ws = null, wsRetry = 0;
+function connectWS() {
+  setWsStatus('connecting', 'WS');
+  try {
+    const streams = PAIRS.map(p => p.toLowerCase() + '@aggTrade').join('/');
+    ws = new WebSocket(`wss://fstream.binance.com/stream?streams=${streams}`);
+    ws.onopen = () => { wsRetry = 0; setWsStatus('live', 'LIVE'); };
+    ws.onmessage = (msg) => {
+      try {
+        const d = JSON.parse(msg.data);
+        if (!d.data) return;
+        const pair = d.data.s;
+        const price = +d.data.p;
+        state.pairPrices[pair] = price;
+        if (pair === 'BTCUSDT') updateBtcPrice(price);
+        evaluateLive(pair, price);
+      } catch (e) {}
+    };
+    ws.onerror = () => setWsStatus('off', 'ERR');
+    ws.onclose = () => { setWsStatus('off', 'OFF'); wsRetry++; setTimeout(connectWS, Math.min(30000, 1000 * Math.pow(2, wsRetry))); };
+  } catch (e) { setTimeout(connectWS, 5000); }
+}
+function setWsStatus(cls, txt) {
+  document.getElementById('wsDot').className = 'live-dot ' + cls;
+  document.getElementById('wsText').textContent = txt;
+}
+function updateBtcPrice(p) {
+  const prev = state.livePrice;
+  state.livePrice = p;
+  const el = document.getElementById('livePrice');
+  el.textContent = '$' + p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (prev != null) {
+    el.classList.remove('up', 'down');
+    if (p > prev) { el.classList.add('up'); setTimeout(() => el.classList.remove('up'), 400); }
+    else if (p < prev) { el.classList.add('down'); setTimeout(() => el.classList.remove('down'), 400); }
+  }
+  if (state.ticker) {
+    const open = +state.ticker.openPrice;
+    if (open) {
+      const pct = ((p / open) - 1) * 100;
+      const pill = document.getElementById('liveDelta');
+      pill.className = 'delta-pill ' + (pct >= 0 ? 'up' : 'down');
+      pill.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    }
+  }
+}
+function evaluateLive(pair, price) {
+  let changed = false;
+  const now = Date.now();
+  const tfMs = { '15m':900000, '30m':1800000, '1h':3600000 };
+  const TIMEOUT_BARS = 20;
+  for (const s of state.signals) {
+    if (s.pair !== pair) continue;
+    if (s.status !== 'active') continue;
+    s.lastPrice = price;
+    if (s.side === 'long') {
+      if (price <= s.stop) { closeSignal(s, 'sl', s.stop); changed = true; continue; }
+      if (price >= s.target) { closeSignal(s, 'tp', s.target); changed = true; continue; }
+    } else {
+      if (price >= s.stop) { closeSignal(s, 'sl', s.stop); changed = true; continue; }
+      if (price <= s.target) { closeSignal(s, 'tp', s.target); changed = true; continue; }
+    }
+    const elapsed = now - s.createdAt;
+    const limit = (tfMs[s.tf] || 900000) * TIMEOUT_BARS;
+    if (elapsed > limit) { closeSignal(s, 'timeout', price); changed = true; }
+  }
+  if (changed) { persist(); renderSignals(); }
+  else updateActiveProgress();
+}
+
+// ============================================================
+// REST
+// ============================================================
+async function tryFetch(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function fetchBtcTicker() {
+  try { state.ticker = await tryFetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT'); }
+  catch (e) {
+    const j = await tryFetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT');
+    const t = j.result.list[0];
+    state.ticker = { lastPrice: t.lastPrice, openPrice: t.prevPrice24h, priceChangePercent: (+t.price24hPcnt * 100).toFixed(2), highPrice: t.highPrice24h, lowPrice: t.lowPrice24h, quoteVolume: t.turnover24h };
+  }
+  renderTickerStrip();
+  if (state.livePrice == null && state.ticker.lastPrice) updateBtcPrice(+state.ticker.lastPrice);
+}
+function renderTickerStrip() {
+  if (!state.ticker) return;
+  const d = state.ticker;
+  const chg = +d.priceChangePercent;
+  setText('sub-change', (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', chg >= 0 ? 'up' : 'down');
+  setText('sub-high', '$' + (+d.highPrice).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+  setText('sub-low', '$' + (+d.lowPrice).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+  setText('sub-vol', fmtUSD(+d.quoteVolume));
+}
+function setText(id, txt, cls) {
+  const el = document.getElementById(id);
+  el.textContent = txt;
+  el.classList.remove('up', 'down', 'warn');
+  if (cls) el.classList.add(cls);
+}
+function fmtUSD(n) {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(2);
+}
+async function fetchKlines(symbol, interval, limit = 120) {
+  try {
+    const arr = await tryFetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+    return arr.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
+  } catch (e) {
+    const ivMap = { '5m': '5', '15m': '15', '30m': '30', '1h': '60', '4h': '240', '1d': 'D' };
+    const j = await tryFetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${ivMap[interval]}&limit=${limit}`);
+    return j.result.list.slice().reverse().map(k => ({ t: +k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
+  }
+}
+async function fetchDerivatives() {
+  let funding = null, oi = null, ls = null;
+  try {
+    const f = await tryFetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT');
+    funding = +f.lastFundingRate * 100;
+    setText('sub-fund', (funding >= 0 ? '+' : '') + funding.toFixed(4) + '%', Math.abs(funding) > 0.02 ? (funding > 0 ? 'down' : 'up') : 'warn');
+  } catch (e) {}
+  try {
+    const arr = await tryFetch('https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=24');
+    if (arr.length) { const first = +arr[0].sumOpenInterest; const last = +arr[arr.length - 1].sumOpenInterest; oi = ((last - first) / first) * 100; }
+  } catch (e) {}
+  try {
+    const arr = await tryFetch('https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=1h&limit=1');
+    if (arr.length) ls = { ratio: +arr[0].longShortRatio, longPct: +arr[0].longAccount * 100, shortPct: +arr[0].shortAccount * 100 };
+  } catch (e) {}
+  return { funding, oi, ls };
+}
+
+// ============================================================
+// INDICATORS
+// ============================================================
+function sma(arr, len) { if (arr.length < len) return null; let s=0; for (let i=arr.length-len;i<arr.length;i++) s+=arr[i]; return s/len; }
+function ema(closes, len) { if (closes.length < len) return null; const k=2/(len+1); let e=closes.slice(0,len).reduce((a,b)=>a+b,0)/len; for (let i=len;i<closes.length;i++) e=closes[i]*k+e*(1-k); return e; }
+function emaSeries(closes, len) {
+  if (closes.length < len) return [];
+  const k=2/(len+1);
+  const out = new Array(closes.length).fill(null);
+  let e = closes.slice(0, len).reduce((a,b)=>a+b,0) / len;
+  out[len-1] = e;
+  for (let i = len; i < closes.length; i++) {
+    e = closes[i] * k + e * (1 - k);
+    out[i] = e;
+  }
+  return out;
+}
+function rsi(closes, len = 14) {
+  if (closes.length < len + 1) return null;
+  let g=0, l=0;
+  for (let i=1;i<=len;i++) { const d=closes[i]-closes[i-1]; if (d>0) g+=d; else l-=d; }
+  g/=len; l/=len;
+  for (let i=len+1;i<closes.length;i++) { const d=closes[i]-closes[i-1]; g=(g*(len-1)+(d>0?d:0))/len; l=(l*(len-1)+(d<0?-d:0))/len; }
+  return 100-100/(1+g/(l||1e-10));
+}
+function atr(candles, len=14) {
+  const trs = candles.map((c,i) => { if (i===0) return c.h-c.l; const p=candles[i-1]; return Math.max(c.h-c.l, Math.abs(c.h-p.c), Math.abs(c.l-p.c)); });
+  if (trs.length < len) return null;
+  let s=0; for (let i=trs.length-len;i<trs.length;i++) s+=trs[i]; return s/len;
+}
+
+// VOLUME PROFILE — POC, VAH, VAL
+function volumeProfile(candles, bins = 40) {
+  // Build a histogram of volume traded at each price bin over the last N candles
+  if (candles.length < 20) return null;
+  let minP = Infinity, maxP = -Infinity;
+  for (const c of candles) { if (c.l < minP) minP = c.l; if (c.h > maxP) maxP = c.h; }
+  if (maxP <= minP) return null;
+  const binSize = (maxP - minP) / bins;
+  const profile = new Array(bins).fill(0);
+  for (const c of candles) {
+    // Distribute candle volume across bins it spans
+    const lowBin = Math.max(0, Math.floor((c.l - minP) / binSize));
+    const highBin = Math.min(bins - 1, Math.floor((c.h - minP) / binSize));
+    const spread = highBin - lowBin + 1;
+    const volPerBin = c.v / spread;
+    for (let i = lowBin; i <= highBin; i++) profile[i] += volPerBin;
+  }
+  // POC = highest volume bin
+  let pocIdx = 0;
+  for (let i = 1; i < bins; i++) if (profile[i] > profile[pocIdx]) pocIdx = i;
+  const totalVol = profile.reduce((a, b) => a + b, 0);
+  const targetVol = totalVol * 0.70; // value area = 70% of volume
+  // Expand outward from POC until we capture 70%
+  let cumVol = profile[pocIdx];
+  let low = pocIdx, high = pocIdx;
+  while (cumVol < targetVol && (low > 0 || high < bins - 1)) {
+    const lowVol = low > 0 ? profile[low - 1] : -1;
+    const highVol = high < bins - 1 ? profile[high + 1] : -1;
+    if (lowVol >= highVol) { low--; cumVol += profile[low]; }
+    else { high++; cumVol += profile[high]; }
+  }
+  return {
+    poc: minP + (pocIdx + 0.5) * binSize,
+    vah: minP + (high + 1) * binSize,
+    val: minP + low * binSize,
+    minP, maxP
+  };
+}
+
+// ============================================================
+// ANALYSIS (for verdict — unchanged BTC logic)
+// ============================================================
+function analyze(candles) {
+  const closes = candles.map(c => c.c);
+  const vols = candles.map(c => c.v);
+  const c = candles[candles.length - 1];
+  const ema20 = ema(closes, 20);
+  const ema50 = ema(closes, 50);
+  const rsiV = rsi(closes, 14);
+  const recent = candles.slice(-21, -1);
+  const hi20 = Math.max(...recent.map(x => x.h));
+  const lo20 = Math.min(...recent.map(x => x.l));
+  const avgVol = sma(vols.slice(0, -1), 20);
+  const volMult = avgVol ? c.v / avgVol : 1;
+  let trend=0, momentum=0, breakout=0, volume=0;
+  if (ema20 && ema50) {
+    if (c.c > ema20 && ema20 > ema50) trend=2;
+    else if (c.c < ema20 && ema20 < ema50) trend=-2;
+    else if (c.c > ema20) trend=1;
+    else if (c.c < ema20) trend=-1;
+  }
+  if (rsiV != null) {
+    if (rsiV > 70) momentum=2;
+    else if (rsiV > 55) momentum=1;
+    else if (rsiV < 30) momentum=-2;
+    else if (rsiV < 45) momentum=-1;
+  }
+  if (c.c > hi20) breakout=2;
+  else if (c.c < lo20) breakout=-2;
+  else if (c.c > hi20 * 0.995) breakout=1;
+  else if (c.c < lo20 * 1.005) breakout=-1;
+  if (volMult > 1.8) volume = (trend+momentum+breakout) >= 0 ? 2 : -2;
+  else if (volMult > 1.3) volume = (trend+momentum+breakout) >= 0 ? 1 : -1;
+  const total = trend + momentum + breakout + volume;
+  let verdict = 'neutral', cls = 'neutral';
+  if (total >= 4) { verdict='bullish'; cls='bull'; }
+  else if (total >= 2) { verdict='lean bull'; cls='bull'; }
+  else if (total <= -4) { verdict='bearish'; cls='bear'; }
+  else if (total <= -2) { verdict='lean bear'; cls='bear'; }
+  return { verdict, cls, score: total, rsi: rsiV, price: c.c, hi20, lo20, atr: atr(candles, 14), volMult, candles };
+}
+
+// ============================================================
+// V5 SIGNAL GENERATION — TREND FILTERED + VOLUME PROFILE
+// ============================================================
+function computePairTrend(candles1h) {
+  // Use 1h EMA50 slope to determine pair trend (THE key fix)
+  if (candles1h.length < 60) return { direction: 'flat', strength: 0 };
+  const closes = candles1h.map(c => c.c);
+  const e50 = emaSeries(closes, 50);
+  const cur = e50[e50.length - 1];
+  const past = e50[e50.length - 8]; // 8 candles ago = ~8 hours back
+  if (cur == null || past == null) return { direction: 'flat', strength: 0 };
+  const slope = (cur - past) / past * 100;
+  const price = closes[closes.length - 1];
+  const aboveEma = price > cur;
+  // Strong trend: slope > 0.5% AND price aligned with slope
+  if (slope > 0.8 && aboveEma) return { direction: 'up', strength: 2 };
+  if (slope > 0.3 && aboveEma) return { direction: 'up', strength: 1 };
+  if (slope < -0.8 && !aboveEma) return { direction: 'down', strength: 2 };
+  if (slope < -0.3 && !aboveEma) return { direction: 'down', strength: 1 };
+  return { direction: 'flat', strength: 0 };
+}
+
+function generateSignals(pair, tf, analysis, htfTrend) {
+  const out = [];
+  if (!analysis || analysis.candles.length < 30) return out;
+  const c = analysis.candles[analysis.candles.length - 1];
+  const prev = analysis.candles[analysis.candles.length - 2];
+  const atrVal = analysis.atr;
+  if (!atrVal) return out;
+  const closes = analysis.candles.map(x => x.c);
+  const vols = analysis.candles.map(x => x.v);
+  const avgV = sma(vols.slice(0, -1), 20);
+  const volMult = avgV ? c.v / avgV : 1;
+
+  // Volume profile on last 96 candles
+  const vp = volumeProfile(analysis.candles.slice(-96));
+  if (!vp) return out;
+
+  // ========================================================
+  // STRATEGY 1: VP REVERSAL — bounce from VAL with trend (long) or rejection at VAH against retail (short with trend)
+  // ========================================================
+  // LONG: HTF trending up, price tagged VAL or below, closing back above VAL, with volume
+  if (htfTrend.direction === 'up' && c.l <= vp.val * 1.001 && c.c > vp.val && c.c > c.o && volMult > 1.1) {
+    let score = 50;
+    score += htfTrend.strength * 10;             // +10 to +20
+    score += Math.min(20, (volMult - 1) * 20);    // +2 to +20
+    if (c.c > prev.h) score += 8;                 // bullish engulf-ish
+    if (analysis.rsi != null && analysis.rsi < 45) score += 8; // oversold within uptrend
+    if (score >= 70) {
+      const stop = vp.val - atrVal * 0.5;
+      const target = vp.poc;
+      const risk = c.c - stop;
+      if (risk > 0 && (target - c.c) > 0) {
+        out.push({
+          side: 'long', strategy: 'VP-BOUNCE',
+          entry: c.c, stop, target,
+          reason: `1h ${htfTrend.direction}trend · tagged VAL (${vp.val.toFixed(2)}) · vol ${volMult.toFixed(1)}× · target POC`,
+          score: Math.min(100, score)
+        });
+      }
+    }
+  }
+  // SHORT: HTF down, price tagged VAH or above, closing back below, with volume
+  if (htfTrend.direction === 'down' && c.h >= vp.vah * 0.999 && c.c < vp.vah && c.c < c.o && volMult > 1.1) {
+    let score = 50;
+    score += htfTrend.strength * 10;
+    score += Math.min(20, (volMult - 1) * 20);
+    if (c.c < prev.l) score += 8;
+    if (analysis.rsi != null && analysis.rsi > 55) score += 8;
+    if (score >= 70) {
+      const stop = vp.vah + atrVal * 0.5;
+      const target = vp.poc;
+      const risk = stop - c.c;
+      if (risk > 0 && (c.c - target) > 0) {
+        out.push({
+          side: 'short', strategy: 'VP-REJECT',
+          entry: c.c, stop, target,
+          reason: `1h ${htfTrend.direction}trend · rejected VAH (${vp.vah.toFixed(2)}) · vol ${volMult.toFixed(1)}× · target POC`,
+          score: Math.min(100, score)
+        });
+      }
+    }
+  }
+
+  // ========================================================
+  // STRATEGY 2: BREAKOUT-RETEST — break and retest 20-bar level WITH trend alignment
+  // ========================================================
+  // Find recent breakout: was the 20-bar high broken in the last 3-8 candles?
+  if (htfTrend.direction === 'up' && analysis.candles.length >= 30) {
+    const window = analysis.candles.slice(-30, -3);
+    const olderHigh = Math.max(...window.slice(0, 20).map(x => x.h));
+    // Did any of bars [-8 to -3] break above olderHigh?
+    let brokeBar = -1;
+    for (let i = analysis.candles.length - 8; i < analysis.candles.length - 2; i++) {
+      if (analysis.candles[i].c > olderHigh) { brokeBar = i; break; }
+    }
+    if (brokeBar > 0) {
+      // Now we're looking for a retest: current candle's low touched olderHigh, but close is back above
+      if (c.l <= olderHigh * 1.003 && c.l >= olderHigh * 0.996 && c.c > olderHigh && c.c > c.o && volMult > 1.0) {
+        let score = 55 + htfTrend.strength * 12 + Math.min(15, (volMult - 1) * 18);
+        if (score >= 70) {
+          const stop = c.l - atrVal * 0.3;
+          const target = c.c + (c.c - stop) * 1.8;
+          out.push({
+            side: 'long', strategy: 'BREAKOUT-RETEST',
+            entry: c.c, stop, target,
+            reason: `Broke ${olderHigh.toFixed(2)} ${analysis.candles.length - brokeBar} bars ago · clean retest · 1h up`,
+            score: Math.min(100, score)
+          });
+        }
+      }
+    }
+  }
+  if (htfTrend.direction === 'down' && analysis.candles.length >= 30) {
+    const window = analysis.candles.slice(-30, -3);
+    const olderLow = Math.min(...window.slice(0, 20).map(x => x.l));
+    let brokeBar = -1;
+    for (let i = analysis.candles.length - 8; i < analysis.candles.length - 2; i++) {
+      if (analysis.candles[i].c < olderLow) { brokeBar = i; break; }
+    }
+    if (brokeBar > 0) {
+      if (c.h >= olderLow * 0.997 && c.h <= olderLow * 1.004 && c.c < olderLow && c.c < c.o && volMult > 1.0) {
+        let score = 55 + htfTrend.strength * 12 + Math.min(15, (volMult - 1) * 18);
+        if (score >= 70) {
+          const stop = c.h + atrVal * 0.3;
+          const target = c.c - (stop - c.c) * 1.8;
+          out.push({
+            side: 'short', strategy: 'BREAKDOWN-RETEST',
+            entry: c.c, stop, target,
+            reason: `Broke ${olderLow.toFixed(2)} ${analysis.candles.length - brokeBar} bars ago · clean retest · 1h down`,
+            score: Math.min(100, score)
+          });
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+function generateWatching(pair, tf, analysis, htfTrend) {
+  if (!analysis || analysis.candles.length < 30) return [];
+  const c = analysis.candles[analysis.candles.length - 1];
+  const out = [];
+  const vp = volumeProfile(analysis.candles.slice(-96));
+  if (!vp) return out;
+
+  // Approaching VAL with up-trend
+  if (htfTrend.direction === 'up') {
+    const distVal = ((c.c - vp.val) / c.c * 100);
+    if (distVal > 0 && distVal < 0.8) {
+      out.push({ pair, tf, side: 'long', text: `Approaching VAL ($${vp.val.toFixed(2)})`, distance: `${distVal.toFixed(2)}% · 1h up`, urgency: 2 - distVal });
+    }
+  }
+  if (htfTrend.direction === 'down') {
+    const distVah = ((vp.vah - c.c) / c.c * 100);
+    if (distVah > 0 && distVah < 0.8) {
+      out.push({ pair, tf, side: 'short', text: `Approaching VAH ($${vp.vah.toFixed(2)})`, distance: `${distVah.toFixed(2)}% · 1h down`, urgency: 2 - distVah });
+    }
+  }
+  return out;
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function configKey(pair, strategy, tf) { return `${pair}:${strategy}:${tf}`; }
+
+function addSignal(pair, tf, sig) {
+  const tfMs = { '15m':900000, '30m':1800000, '1h':3600000 }[tf];
+  const cutoff = Date.now() - tfMs * 8;
+  if (state.signals.some(s => s.pair === pair && s.tf === tf && s.side === sig.side && s.strategy === sig.strategy && s.createdAt > cutoff)) return false;
+  if (state.disabledConfigs.has(configKey(pair, sig.strategy, tf))) return false;
+  state.signals.unshift({
+    id: uid(), pair, side: sig.side, strategy: sig.strategy, tf,
+    entry: sig.entry, stop: sig.stop, target: sig.target, reason: sig.reason,
+    score: sig.score,
+    status: 'active', createdAt: Date.now(), updatedAt: Date.now(),
+    closedAt: null, closePrice: null, pnlR: null,
+    lastPrice: sig.entry,
+    version: 'v5'
+  });
+  if (state.signals.length > 1000) state.signals = state.signals.slice(0, 1000);
+  persist();
+  return true;
+}
+
+function closeSignal(s, outcome, price) {
+  s.status = outcome; s.closedAt = Date.now(); s.closePrice = price;
+  const risk = Math.abs(s.entry - s.stop);
+  const move = s.side === 'long' ? (price - s.entry) : (s.entry - price);
+  s.pnlR = risk > 0 ? move / risk : 0;
+}
+
+function updateActiveProgress() {
+  document.querySelectorAll('.signal-card[data-status="active"]').forEach(card => {
+    const id = card.dataset.id;
+    const s = state.signals.find(x => x.id === id);
+    if (!s) return;
+    const price = state.pairPrices[s.pair] || s.lastPrice;
+    const fill = card.querySelector('.progress-fill');
+    const pnlVal = card.querySelector('.live-pnl');
+    if (fill) {
+      const totalRange = Math.abs(s.target - s.stop);
+      const fromStop = s.side === 'long' ? (price - s.stop) : (s.stop - price);
+      const pct = Math.max(0, Math.min(100, (fromStop / totalRange) * 100));
+      fill.style.width = pct + '%';
+      fill.className = 'progress-fill ' + (pct > 50 ? 'bull' : 'bear');
+    }
+    if (pnlVal) {
+      const risk = Math.abs(s.entry - s.stop);
+      const move = s.side === 'long' ? (price - s.entry) : (s.entry - price);
+      const r = risk > 0 ? move / risk : 0;
+      pnlVal.textContent = (r >= 0 ? '+' : '') + r.toFixed(2) + 'R';
+      pnlVal.style.color = r >= 0 ? 'var(--bull)' : 'var(--bear)';
+    }
+  });
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderTimeframes(results) {
+  document.getElementById('tfGrid').innerHTML = results.map(r => {
+    if (!r.analysis) return `<div class="tf-card"><div class="tf-card-tf">${r.label}</div><div class="tf-card-verdict neutral">—</div></div>`;
+    const a = r.analysis;
+    const meterPct = Math.min(50, Math.abs(a.score) / 8 * 50);
+    const meterSide = a.score >= 0 ? 'bull' : 'bear';
+    return `<div class="tf-card"><div class="tf-card-tf">${r.label}</div><div class="tf-card-verdict ${a.cls}">${a.verdict}</div><div class="tf-card-meter"><div class="tf-card-meter-fill ${meterSide}" style="width:${meterPct}%"></div></div></div>`;
+  }).join('');
+}
+function renderVerdict(results, deriv) {
+  const weights = Object.fromEntries(TIMEFRAMES.map(t => [t.bin, t.weight]));
+  let totalScore = 0, totalW = 0, bullCount = 0, bearCount = 0, neutCount = 0;
+  results.forEach(r => {
+    if (!r.analysis) return;
+    const w = weights[r.bin] || 1;
+    totalScore += r.analysis.score * w; totalW += w * 8;
+    if (r.analysis.cls === 'bull') bullCount++;
+    else if (r.analysis.cls === 'bear') bearCount++;
+    else neutCount++;
+  });
+  const norm = totalW > 0 ? (totalScore / totalW) * 100 : 0;
+  let adj = 0;
+  if (deriv.funding != null) { if (deriv.funding > 0.05) adj -= 8; else if (deriv.funding < -0.05) adj += 8; }
+  if (deriv.ls) { if (deriv.ls.ratio > 2.5) adj -= 6; else if (deriv.ls.ratio < 0.6) adj += 6; }
+  const final = Math.max(-100, Math.min(100, norm + adj));
+  let word = 'neutral', cls = 'neutral';
+  if (final > 35) { word = 'bullish'; cls = 'bull'; }
+  else if (final > 15) { word = 'lean bull'; cls = 'bull'; }
+  else if (final < -35) { word = 'bearish'; cls = 'bear'; }
+  else if (final < -15) { word = 'lean bear'; cls = 'bear'; }
+  document.getElementById('verdictWord').textContent = word;
+  document.getElementById('heroVerdict').className = 'hero-verdict ' + cls;
+  document.getElementById('verdictScore').textContent = (final >= 0 ? '+' : '') + final.toFixed(0);
+  const tot = bullCount + bearCount + neutCount;
+  const dom = Math.max(bullCount, bearCount, neutCount);
+  const agree = tot ? Math.round(dom / tot * 100) : 0;
+  document.getElementById('verdictAgree').textContent = agree + '%';
+}
+function renderDerivatives(deriv) {
+  if (deriv.funding != null) {
+    const r = deriv.funding;
+    let cls = 'neutral', note = 'Balanced';
+    if (r > 0.05) { cls = 'bear'; note = 'Longs overpaying'; }
+    else if (r > 0.02) { cls = 'bear'; note = 'Mild bearish'; }
+    else if (r < -0.05) { cls = 'bull'; note = 'Shorts paying'; }
+    else if (r < -0.02) { cls = 'bull'; note = 'Mild bullish'; }
+    const v = document.getElementById('d-fund-val');
+    v.textContent = (r >= 0 ? '+' : '') + r.toFixed(4) + '%';
+    v.className = 'deriv-value ' + cls;
+    document.getElementById('d-fund-note').textContent = note;
+  }
+  if (deriv.oi != null) {
+    const ch = deriv.oi;
+    let note = 'Stable';
+    if (ch > 5) note = 'New leverage';
+    else if (ch < -5) note = 'Closing';
+    const v = document.getElementById('d-oi-val');
+    v.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
+    document.getElementById('d-oi-note').textContent = note;
+  }
+  if (deriv.ls) {
+    let cls = 'neutral', note = 'Balanced';
+    if (deriv.ls.ratio > 2.5) { cls = 'bear'; note = 'Retail too long'; }
+    else if (deriv.ls.ratio > 1.8) { cls = 'bear'; note = 'Lean bearish'; }
+    else if (deriv.ls.ratio < 0.6) { cls = 'bull'; note = 'Retail too short'; }
+    else if (deriv.ls.ratio < 0.8) { cls = 'bull'; note = 'Lean bullish'; }
+    const v = document.getElementById('d-ls-val');
+    v.textContent = deriv.ls.ratio.toFixed(2);
+    v.className = 'deriv-value ' + cls;
+    document.getElementById('d-ls-note').textContent = `${note} · ${deriv.ls.longPct.toFixed(0)}/${deriv.ls.shortPct.toFixed(0)}`;
+  }
+}
+function renderWatching() {
+  const list = document.getElementById('watchingList');
+  const items = state.watching.slice().sort((a, b) => b.urgency - a.urgency).slice(0, 6);
+  document.getElementById('watchingCount').textContent = state.watching.length ? `${state.watching.length} forming` : '—';
+  if (items.length === 0) {
+    list.innerHTML = `<div class="watching-empty">No setups close. Wait for trend + level confluence.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(w => {
+    const pairShort = w.pair.replace('USDT', '');
+    return `<div class="watching-item"><div class="watching-item-left"><span class="pair-tag ${w.side}">${pairShort}</span><span class="tf-tag">${w.tf}</span><span class="text">${w.text}</span></div><span class="distance">${w.distance}</span></div>`;
+  }).join('');
+}
+function updatePairFilter() {
+  const pairs = [...new Set(state.signals.map(s => s.pair))].sort();
+  const sel = document.getElementById('pairFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">All pairs</option>' + pairs.map(p => `<option value="${p}">${p.replace('USDT', '')}</option>`).join('');
+  if (cur && (cur === 'all' || pairs.includes(cur))) sel.value = cur;
+}
+function renderSignals() {
+  const list = document.getElementById('signalsList');
+  const fActive = document.getElementById('filter-active').checked;
+  const fClosed = document.getElementById('filter-closed').checked;
+  const tfFilter = document.getElementById('tfFilter').value;
+  const pairFilter = document.getElementById('pairFilter').value;
+  updatePairFilter();
+  const filtered = state.signals.filter(s => {
+    if (tfFilter !== 'all' && s.tf !== tfFilter) return false;
+    if (pairFilter !== 'all' && s.pair !== pairFilter) return false;
+    if (s.status === 'active' && !fActive) return false;
+    if ((s.status === 'tp' || s.status === 'sl' || s.status === 'timeout') && !fClosed) return false;
+    return true;
+  });
+  document.getElementById('signalCount').textContent = state.signals.length;
+  const closed = state.signals.filter(s => s.status === 'tp' || s.status === 'sl');
+  const wins = closed.filter(s => s.status === 'tp').length;
+  const losses = closed.filter(s => s.status === 'sl').length;
+  const wr = closed.length ? (wins / closed.length * 100) : null;
+  document.getElementById('stat-total').textContent = closed.length;
+  document.getElementById('stat-wr').textContent = wr != null ? wr.toFixed(0) + '%' : '—';
+  document.getElementById('stat-wr').className = 'stat-value ' + (wr == null ? '' : wr >= 50 ? 'up' : 'down');
+  document.getElementById('stat-wins').textContent = wins;
+  document.getElementById('stat-losses').textContent = losses;
+  document.getElementById('perfBadge').textContent = closed.length;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="signal-empty"><div class="signal-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>${state.signals.length === 0 ? 'v5 strategy initialized' : 'No matches'}</h4><p>${state.signals.length === 0 ? 'Trend filter + Volume Profile + breakout-retest. Signals only fire on score ≥ 70 with multi-condition confluence. Fewer signals, higher quality.' : 'No signals match filters.'}</p></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(s => {
+    const price = state.pairPrices[s.pair] || s.lastPrice || s.entry;
+    let progressPct = 50, pnlR = 0;
+    if (s.status === 'active') {
+      const totalRange = Math.abs(s.target - s.stop);
+      const fromStop = s.side === 'long' ? (price - s.stop) : (s.stop - price);
+      progressPct = Math.max(0, Math.min(100, (fromStop / totalRange) * 100));
+      const risk = Math.abs(s.entry - s.stop);
+      const move = s.side === 'long' ? (price - s.entry) : (s.entry - price);
+      pnlR = risk > 0 ? move / risk : 0;
+    } else if (s.pnlR != null) pnlR = s.pnlR;
+    const statusLabel = { active: 'Active', tp: 'Hit TP', sl: 'Hit SL', timeout: 'Timeout' }[s.status];
+    const ageMin = Math.floor((Date.now() - s.createdAt) / 60000);
+    const ageTxt = ageMin < 1 ? 'just now' : ageMin < 60 ? `${ageMin}m ago` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h ${ageMin%60}m ago` : `${Math.floor(ageMin/1440)}d ago`;
+    const pairShort = s.pair.replace('USDT', '');
+    const decimals = s.entry < 1 ? 5 : s.entry < 10 ? 4 : s.entry < 100 ? 3 : 2;
+    return `
+      <div class="signal-card ${s.side}" data-id="${s.id}" data-status="${s.status}">
+        <div class="signal-row1">
+          <div class="signal-row1-left">
+            <span class="signal-pair">${pairShort}</span>
+            <span class="signal-side ${s.side}">${s.side}</span>
+            <span class="signal-strat">${s.strategy} · ${s.tf}</span>
+            ${s.score ? `<span class="signal-score-badge">${Math.round(s.score)}</span>` : ''}
+          </div>
+          <span class="signal-status ${s.status}">${statusLabel}</span>
+        </div>
+        <div class="signal-grid">
+          <div class="signal-cell"><label>Entry</label><value class="entry">$${s.entry.toFixed(decimals)}</value></div>
+          <div class="signal-cell"><label>Stop</label><value class="stop">$${s.stop.toFixed(decimals)}</value></div>
+          <div class="signal-cell"><label>Target</label><value class="target">$${s.target.toFixed(decimals)}</value></div>
+          <div class="signal-cell"><label>${s.status === 'active' ? 'Live PnL' : 'Final PnL'}</label><value class="${pnlR >= 0 ? 'up' : 'down'}">${pnlR >= 0 ? '+' : ''}${pnlR.toFixed(2)}R</value></div>
+        </div>
+        ${s.status === 'active' ? `
+          <div class="signal-progress">
+            <span>SL</span>
+            <div class="progress-track"><div class="progress-fill ${progressPct > 50 ? 'bull' : 'bear'}" style="width:${progressPct}%"></div></div>
+            <span>TP</span>
+            <span class="live-pnl" style="color: ${pnlR >= 0 ? 'var(--bull)' : 'var(--bear)'}; font-weight: 600;">${pnlR >= 0 ? '+' : ''}${pnlR.toFixed(2)}R</span>
+          </div>
+        ` : ''}
+        <div class="signal-meta">
+          <span class="reason">${s.reason}</span>
+          <a href="https://www.tradingview.com/chart/?symbol=BINANCE:${s.pair}.P" target="_blank" rel="noopener">View chart ↗</a>
+          <span>${ageTxt}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setScanProgress(done, total, label) {
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  document.getElementById('scanProgressFill').style.width = pct + '%';
+  document.getElementById('scanProgressCount').textContent = `${done} / ${total}`;
+  document.getElementById('scanProgressLabel').textContent = label;
+  document.getElementById('scanProgressContainer').classList.toggle('done', done >= total && total > 0);
+}
+
+// ============================================================
+// PERFORMANCE
+// ============================================================
+function groupStats(signals, keyFn) {
+  const groups = {};
+  signals.forEach(s => {
+    if (s.status !== 'tp' && s.status !== 'sl') return;
+    const k = keyFn(s);
+    if (!groups[k]) groups[k] = { wins: 0, losses: 0, totalR: 0 };
+    groups[k][s.status === 'tp' ? 'wins' : 'losses']++;
+    if (s.pnlR != null) groups[k].totalR += s.pnlR;
+  });
+  return Object.entries(groups).map(([k, v]) => {
+    const total = v.wins + v.losses;
+    return { key: k, wins: v.wins, losses: v.losses, total, wr: total > 0 ? (v.wins / total * 100) : 0, totalR: v.totalR, avgR: total > 0 ? v.totalR / total : 0 };
+  }).sort((a, b) => b.total - a.total);
+}
+function classifyWR(wr, count) {
+  if (count < 5) return 'muted';
+  if (wr >= 55) return 'up';
+  if (wr <= 35) return 'down';
+  return 'warn';
+}
+function renderPerformance() {
+  // Only count v5 signals for new stats; old v4 signals show in "all-time" but not v5
+  const v5Signals = state.signals.filter(s => s.version === 'v5');
+  const v5Closed = v5Signals.filter(s => s.status === 'tp' || s.status === 'sl');
+  const closed = v5Closed; // current strategy only
+  const c = document.getElementById('perfContent');
+  if (closed.length < 5) {
+    c.innerHTML = `<div class="perf-empty"><h3>${closed.length} of 5 v5 trades complete</h3><p>v5 introduced a trend filter + Volume Profile strategy. Stats reset for a clean evaluation. Performance breakdowns appear after 5 closed trades — typically 1-3 days of running.</p></div>`;
+    return;
+  }
+  const wins = closed.filter(s => s.status === 'tp').length;
+  const losses = closed.length - wins;
+  const wr = wins / closed.length * 100;
+  const totalR = closed.reduce((a, s) => a + (s.pnlR || 0), 0);
+  const avgR = totalR / closed.length;
+  const grossWin = closed.filter(s => s.pnlR > 0).reduce((a, s) => a + s.pnlR, 0);
+  const grossLoss = Math.abs(closed.filter(s => s.pnlR < 0).reduce((a, s) => a + s.pnlR, 0));
+  const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
+  const configStats = groupStats(closed, s => configKey(s.pair, s.strategy, s.tf));
+  const autoDisable = configStats.filter(c => c.total >= 5 && c.wr < 40);
+  const pairStats = groupStats(closed, s => s.pair);
+  const stratStats = groupStats(closed, s => s.strategy);
+  const tfStats = groupStats(closed, s => s.tf);
+  const hourStats = {};
+  closed.forEach(s => { const h = new Date(s.createdAt).getHours(); if (!hourStats[h]) hourStats[h] = { wins: 0, losses: 0 }; hourStats[h][s.status === 'tp' ? 'wins' : 'losses']++; });
+  let banner = '';
+  if (autoDisable.length > 0) banner = `<div class="filter-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><div><b>${autoDisable.length} configuration(s)</b> are losing on 5+ trades. Consider disabling them below.</div></div>`;
+  c.innerHTML = `
+    ${banner}
+    <div class="perf-hero">
+      <div class="perf-hero-cell"><div class="perf-hero-label">v5 win rate</div><div class="perf-hero-value ${wr >= 50 ? 'up' : 'down'}">${wr.toFixed(1)}%</div><div class="perf-hero-note">${closed.length} closed trades</div></div>
+      <div class="perf-hero-cell"><div class="perf-hero-label">Profit factor</div><div class="perf-hero-value ${pf >= 1.3 ? 'up' : pf >= 1 ? 'warn' : 'down'}">${isFinite(pf) ? pf.toFixed(2) : '∞'}</div><div class="perf-hero-note">${pf >= 1.3 ? 'Healthy' : pf >= 1 ? 'Marginal' : 'Negative'}</div></div>
+      <div class="perf-hero-cell"><div class="perf-hero-label">Total return</div><div class="perf-hero-value ${totalR >= 0 ? 'up' : 'down'}">${totalR >= 0 ? '+' : ''}${totalR.toFixed(1)}R</div><div class="perf-hero-note">Sum PnL in R</div></div>
+      <div class="perf-hero-cell"><div class="perf-hero-label">Avg per trade</div><div class="perf-hero-value ${avgR >= 0 ? 'up' : 'down'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</div><div class="perf-hero-note">${wins}W / ${losses}L</div></div>
+    </div>
+    <div class="perf-section">
+      <div class="perf-section-title">By configuration <span class="help">disable underperformers</span></div>
+      <table class="perf-table"><thead><tr><th>Config</th><th>Trades</th><th>Win rate</th><th>Total R</th><th>Avg R</th><th></th></tr></thead><tbody>${configStats.map(s => {
+        const [pair, strat, tf] = s.key.split(':');
+        const disabled = state.disabledConfigs.has(s.key);
+        const wrClass = classifyWR(s.wr, s.total);
+        return `<tr class="${disabled ? 'disabled' : ''}"><td><b>${pair.replace('USDT','')}</b> · ${strat} · ${tf}</td><td>${s.total} <span class="muted">(${s.wins}W/${s.losses}L)</span></td><td>${s.wr.toFixed(0)}% <span class="wr-bar"><span class="wr-bar-fill ${wrClass}" style="width:${s.wr}%"></span></span></td><td class="${s.totalR >= 0 ? 'bull-cell' : 'bear-cell'}">${s.totalR >= 0 ? '+' : ''}${s.totalR.toFixed(2)}R</td><td class="${s.avgR >= 0 ? 'bull-cell' : 'bear-cell'}">${s.avgR >= 0 ? '+' : ''}${s.avgR.toFixed(2)}R</td><td><button class="disable-btn ${disabled ? 'disabled' : ''}" data-config="${s.key}">${disabled ? 'Disabled' : 'Disable'}</button></td></tr>`;
+      }).join('')}</tbody></table>
+    </div>
+    <div class="perf-section">
+      <div class="perf-section-title">By pair</div>
+      <table class="perf-table"><thead><tr><th>Pair</th><th>Trades</th><th>Win rate</th><th>Total R</th></tr></thead><tbody>${pairStats.map(s => { const wrClass = classifyWR(s.wr, s.total); return `<tr><td><b>${s.key.replace('USDT','')}</b></td><td>${s.total}</td><td>${s.wr.toFixed(0)}% <span class="wr-bar"><span class="wr-bar-fill ${wrClass}" style="width:${s.wr}%"></span></span></td><td class="${s.totalR >= 0 ? 'bull-cell' : 'bear-cell'}">${s.totalR >= 0 ? '+' : ''}${s.totalR.toFixed(2)}R</td></tr>`; }).join('')}</tbody></table>
+    </div>
+    <div class="perf-section">
+      <div class="perf-section-title">By strategy</div>
+      <table class="perf-table"><thead><tr><th>Strategy</th><th>Trades</th><th>Win rate</th><th>Total R</th></tr></thead><tbody>${stratStats.map(s => { const wrClass = classifyWR(s.wr, s.total); return `<tr><td><b>${s.key}</b></td><td>${s.total}</td><td>${s.wr.toFixed(0)}% <span class="wr-bar"><span class="wr-bar-fill ${wrClass}" style="width:${s.wr}%"></span></span></td><td class="${s.totalR >= 0 ? 'bull-cell' : 'bear-cell'}">${s.totalR >= 0 ? '+' : ''}${s.totalR.toFixed(2)}R</td></tr>`; }).join('')}</tbody></table>
+    </div>
+    <div class="perf-section">
+      <div class="perf-section-title">By timeframe</div>
+      <table class="perf-table"><thead><tr><th>TF</th><th>Trades</th><th>Win rate</th><th>Total R</th></tr></thead><tbody>${tfStats.map(s => { const wrClass = classifyWR(s.wr, s.total); return `<tr><td><b>${s.key}</b></td><td>${s.total}</td><td>${s.wr.toFixed(0)}% <span class="wr-bar"><span class="wr-bar-fill ${wrClass}" style="width:${s.wr}%"></span></span></td><td class="${s.totalR >= 0 ? 'bull-cell' : 'bear-cell'}">${s.totalR >= 0 ? '+' : ''}${s.totalR.toFixed(2)}R</td></tr>`; }).join('')}</tbody></table>
+    </div>
+  `;
+  c.querySelectorAll('.disable-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.config;
+      if (state.disabledConfigs.has(key)) state.disabledConfigs.delete(key);
+      else state.disabledConfigs.add(key);
+      persistFilters(); renderPerformance();
+    });
+  });
+}
+
+// Export/Import
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = { signals: state.signals, disabledConfigs: [...state.disabledConfigs], exportedAt: new Date().toISOString(), version: 'v5' };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `sawaiz-signals-${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.signals && Array.isArray(data.signals)) {
+        if (confirm(`Import ${data.signals.length} signals? This will REPLACE current history.`)) {
+          state.signals = data.signals;
+          if (data.disabledConfigs) state.disabledConfigs = new Set(data.disabledConfigs);
+          persist(); persistFilters();
+          renderSignals(); renderPerformance();
+          alert('Imported.');
+        }
+      } else alert('Invalid file.');
+    } catch (err) { alert('Failed to parse JSON.'); }
+  };
+  reader.readAsText(file);
+});
+
+// ============================================================
+// MAIN SCAN
+// ============================================================
+async function fullScan() {
+  document.getElementById('liveDot').className = 'live-dot connecting';
+  document.getElementById('liveText').textContent = 'Scanning';
+  setScanProgress(0, PAIRS.length, 'Loading');
+
+  await fetchBtcTicker();
+
+  // BTC verdict timeframes
+  const btcTfResults = await Promise.all(TIMEFRAMES.map(async tf => {
+    try {
+      const candles = await fetchKlines('BTCUSDT', tf.bin, 120);
+      return { ...tf, analysis: analyze(candles) };
+    } catch (e) { return { ...tf, analysis: null }; }
+  }));
+
+  // Compute trend for each pair (1h EMA50)
+  for (const pair of PAIRS) {
+    try {
+      const c1h = await fetchKlines(pair, '1h', 120);
+      state.pairTrends[pair] = computePairTrend(c1h);
+    } catch (e) { state.pairTrends[pair] = { direction: 'flat', strength: 0 }; }
+  }
+
+  // Multi-pair signal scan
+  state.watching = [];
+  let done = 0;
+  for (const pair of PAIRS) {
+    const htfTrend = state.pairTrends[pair] || { direction: 'flat', strength: 0 };
+    for (const tf of SIGNAL_TFS) {
+      try {
+        const candles = await fetchKlines(pair, tf, 120);
+        if (candles.length < 30) continue;
+        const a = analyze(candles);
+        // Backstop active signals against latest candle
+        for (const sig of state.signals) {
+          if (sig.pair !== pair || sig.tf !== tf || sig.status !== 'active') continue;
+          const lc = candles[candles.length - 1];
+          if (sig.side === 'long') {
+            if (lc.l <= sig.stop) closeSignal(sig, 'sl', sig.stop);
+            else if (lc.h >= sig.target) closeSignal(sig, 'tp', sig.target);
+          } else {
+            if (lc.h >= sig.stop) closeSignal(sig, 'sl', sig.stop);
+            else if (lc.l <= sig.target) closeSignal(sig, 'tp', sig.target);
+          }
+        }
+        // New signals (trend filter applied inside generateSignals)
+        generateSignals(pair, tf, a, htfTrend).forEach(s => addSignal(pair, tf, s));
+        state.watching.push(...generateWatching(pair, tf, a, htfTrend));
+      } catch (e) {}
+    }
+    done++;
+    setScanProgress(done, PAIRS.length, 'Scanning');
+  }
+
+  const deriv = await fetchDerivatives();
+  renderTimeframes(btcTfResults);
+  renderDerivatives(deriv);
+  renderVerdict(btcTfResults, deriv);
+  renderWatching();
+  renderSignals();
+  persist();
+  state.lastScanAt = Date.now();
+  document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString();
+  document.getElementById('liveDot').className = 'live-dot';
+  document.getElementById('liveText').textContent = 'Live';
+  setScanProgress(PAIRS.length, PAIRS.length, 'Complete');
+}
+
+document.getElementById('filter-active').addEventListener('change', renderSignals);
+document.getElementById('filter-closed').addEventListener('change', renderSignals);
+document.getElementById('tfFilter').addEventListener('change', renderSignals);
+document.getElementById('pairFilter').addEventListener('change', renderSignals);
+document.getElementById('clearHistory').addEventListener('click', () => {
+  if (confirm('Clear all signal history? This cannot be undone.')) { state.signals = []; persist(); renderSignals(); }
+});
+
+connectWS();
+fullScan();
+setInterval(fullScan, 60000);
+setInterval(() => { renderSignals(); }, 5000);
+</script>
+</body>
+</html>
